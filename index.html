@@ -121,130 +121,547 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cap Mission - Vidéo</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        * { box-sizing: border-box; }
-        body { font-family: 'Poppins', sans-serif; background: #f4f7f6; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .card { background: white; width: 100%; max-width: 400px; padding: 30px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); text-align: center; border-top: 8px solid #f26522; }
-        .logo { width: 140px; margin-bottom: 25px; }
-        h2 { color: #2e3192; margin-bottom: 10px; font-size: 1.5rem; }
-        p { color: #666; font-size: 0.9rem; margin-bottom: 30px; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Candidature Cap Mission</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --orange: #f26522;
+      --blue: #2e3192;
+      --blue-dark: #1e2170;
+      --white: #ffffff;
+      --gray: #f0f2f5;
+      --text: #1a1a2e;
+      --muted: #7a7a9a;
+      --danger: #e53e3e;
+      --success: #38a169;
+    }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--gray);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: var(--white);
+      width: 100%;
+      max-width: 480px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(46,49,146,0.12);
+    }
+    .card-header {
+      background: var(--blue);
+      padding: 28px 32px 24px;
+      text-align: center;
+      position: relative;
+    }
+    .card-header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 4px;
+      background: var(--orange);
+    }
+    .card-header img {
+      height: 36px;
+      object-fit: contain;
+      filter: brightness(0) invert(1);
+      margin-bottom: 12px;
+    }
+    .card-header h1 {
+      font-family: 'Syne', sans-serif;
+      color: var(--white);
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+    .card-header p {
+      color: rgba(255,255,255,0.65);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    .card-body { padding: 28px 32px 32px; }
 
-        .camera-trigger {
-            background: #fdf2ed; border: 2px dashed #f26522; border-radius: 50%;
-            width: 120px; height: 120px; display: flex; align-items: center; justify-content: center;
-            margin: 0 auto 20px auto; cursor: pointer; transition: transform 0.2s;
-        }
-        .camera-trigger:active { transform: scale(0.95); }
-        .camera-icon { font-size: 50px; }
+    .field { margin-bottom: 20px; }
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--blue);
+      margin-bottom: 7px;
+      letter-spacing: 0.3px;
+    }
+    .field input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e2e4f0;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 15px;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field input:focus { border-color: var(--orange); }
 
-        #file-name { color: #2e3192; font-weight: 600; margin-bottom: 20px; display: none; }
+    .recorder-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--blue);
+      margin-bottom: 10px;
+      display: block;
+    }
 
-        .btn-submit {
-            background: #2e3192; color: white; border: none; padding: 18px;
-            width: 100%; border-radius: 12px; font-weight: 600; font-size: 1rem;
-            cursor: pointer; display: none; box-shadow: 0 4px 15px rgba(46, 49, 146, 0.3);
-        }
-        #loader { display: none; margin-top: 15px; color: #f26522; font-weight: bold; }
-    </style>
+    .video-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: #0d0d1a;
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .timer-overlay {
+      position: absolute;
+      top: 12px; right: 12px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      display: none;
+      align-items: center;
+      gap: 6px;
+    }
+    .timer-overlay.active { display: flex; }
+    .rec-dot {
+      width: 8px; height: 8px;
+      background: var(--danger);
+      border-radius: 50%;
+      animation: blink 1s infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    .size-bar-wrap { margin-bottom: 14px; display: none; }
+    .size-bar-wrap.visible { display: block; }
+    .size-bar-top {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+    .size-bar-track {
+      height: 6px;
+      background: #e2e4f0;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .size-bar-fill {
+      height: 100%;
+      background: var(--orange);
+      border-radius: 99px;
+      transition: width 0.4s, background 0.3s;
+      width: 0%;
+    }
+    .size-bar-fill.danger { background: var(--danger); }
+
+    .controls { display: flex; gap: 10px; margin-bottom: 20px; }
+    .btn {
+      flex: 1;
+      padding: 13px 10px;
+      border: none;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+    }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-record { background: var(--orange); color: white; }
+    .btn-record:hover:not(:disabled) { background: #d4561b; transform: translateY(-1px); }
+    .btn-stop { background: var(--danger); color: white; }
+    .btn-stop:hover:not(:disabled) { background: #c53030; transform: translateY(-1px); }
+    .btn-reset { background: var(--gray); color: var(--blue); flex: 0 0 auto; padding: 13px 16px; }
+    .btn-reset:hover:not(:disabled) { background: #e2e4f0; }
+
+    .status {
+      text-align: center;
+      font-size: 13px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .status.show { display: block; }
+    .status.info    { background: #ebf4ff; color: var(--blue); }
+    .status.warn    { background: #fff3cd; color: #856404; }
+    .status.error   { background: #fff0f0; color: var(--danger); }
+    .status.success { background: #f0fff4; color: var(--success); }
+
+    .btn-submit {
+      width: 100%;
+      padding: 16px;
+      background: var(--blue);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-family: 'Syne', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.5px;
+    }
+    .btn-submit:hover:not(:disabled) { background: var(--blue-dark); transform: translateY(-1px); }
+    .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .upload-progress { margin-top: 14px; display: none; }
+    .upload-progress.show { display: block; }
+    .upload-bar-track {
+      height: 8px;
+      background: #e2e4f0;
+      border-radius: 99px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    .upload-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--blue), var(--orange));
+      border-radius: 99px;
+      width: 0%;
+      transition: width 0.3s;
+    }
+    .upload-bar-label { text-align: center; font-size: 13px; color: var(--muted); }
+
+    footer { text-align: center; font-size: 11px; color: var(--muted); margin-top: 20px; }
+
+    .success-screen { display: none; text-align: center; padding: 40px 32px; }
+    .success-screen.show { display: block; }
+    .success-icon {
+      width: 72px; height: 72px;
+      background: #f0fff4;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 32px;
+    }
+    .success-screen h2 {
+      font-family: 'Syne', sans-serif;
+      color: var(--blue);
+      font-size: 22px;
+      margin-bottom: 10px;
+    }
+    .success-screen p { color: var(--muted); font-size: 15px; line-height: 1.6; }
+  </style>
 </head>
 <body>
 
-    <div class="card">
-        <img src="https://sb.capmission.ma/files/site/images/logo.png" class="logo" alt="Cap Mission">
-        <h2>Votre Vidéo</h2>
-        <p>Appuyez sur l'icône pour filmer votre présentation (max 4 min).</p>
+<div class="card">
+  <div class="card-header">
+    <img src="https://sb.capmission.ma/files/site/images/logo.png" alt="Cap Mission">
+    <h1>Finalisez votre candidature</h1>
+    <p>Enregistrez une courte vidéo de présentation</p>
+  </div>
 
-        <form id="uploadForm">
-            <input type="hidden" name="email" id="hiddenEmail">
+  <div class="card-body" id="main-form">
 
-            <label for="video-input" class="camera-trigger">
-                <span class="camera-icon">📸</span>
-            </label>
-            <input type="file" id="video-input" name="video" accept="video/*" capture="user" style="display:none">
-
-            <div id="file-name">Vidéo sélectionnée ! ✅</div>
-
-            <button type="submit" id="submitBtn" class="btn-submit">ENVOYER MAINTENANT</button>
-        </form>
-
-        <div id="loader">Envoi en cours... 🚀<br><small>Merci de ne pas fermer cette page</small></div>
-        <div id="status"></div>
+    <div class="field" style="display: none;" >
+      <label for="email">Votre adresse e-mail</label>
+      <input type="email" id="email" placeholder="exemple@email.com" required>
     </div>
 
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const emailCandidat = urlParams.get('email');
-        if (emailCandidat) document.getElementById('hiddenEmail').value = emailCandidat;
+    <span class="recorder-label">Votre vidéo <span style="color:var(--muted);font-weight:400">(max 5 min · 50 Mo)</span></span>
 
-        const input = document.getElementById('video-input');
-        const btn = document.getElementById('submitBtn');
-        const fileName = document.getElementById('file-name');
-        const loader = document.getElementById('loader');
+    <div class="video-wrapper">
+      <video id="preview" autoplay muted playsinline></video>
+      <div class="timer-overlay" id="timerOverlay">
+        <div class="rec-dot"></div>
+        <span id="timerText">00:00</span>
+      </div>
+    </div>
 
-        input.onchange = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            if (file.size > 80 * 1024 * 1024) { alert("Vidéo trop lourde (max 80MB)"); input.value=""; return; }
-            fileName.style.display = 'block';
-            btn.style.display = 'block';
-            btn.scrollIntoView({ behavior: 'smooth' });
+    <div class="size-bar-wrap" id="sizeBarWrap">
+      <div class="size-bar-top">
+        <span>Taille de la vidéo</span>
+        <span id="sizeLabel">0 Mo / 50 Mo</span>
+      </div>
+      <div class="size-bar-track">
+        <div class="size-bar-fill" id="sizeBarFill"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn btn-record" id="btnRecord">▶ Démarrer</button>
+      <button class="btn btn-stop"   id="btnStop"   disabled>⏹ Arrêter</button>
+      <button class="btn btn-reset"  id="btnReset"  disabled title="Recommencer">↺</button>
+    </div>
+
+    <div class="status" id="statusMsg"></div>
+
+    <button class="btn-submit" id="btnSubmit" disabled>ENVOYER MA CANDIDATURE</button>
+
+    <div class="upload-progress" id="uploadProgress">
+      <div class="upload-bar-track">
+        <div class="upload-bar-fill" id="uploadBarFill"></div>
+      </div>
+      <div class="upload-bar-label" id="uploadLabel">Envoi en cours…</div>
+    </div>
+
+    <footer>&copy; 2026 Cap Mission</footer>
+  </div>
+
+  <div class="success-screen" id="successScreen">
+    <div class="success-icon">✅</div>
+    <h2>Candidature envoyée !</h2>
+    <p>Merci, votre vidéo a bien été reçue.<br>Notre équipe vous contactera très prochainement.</p>
+    <footer style="margin-top:30px">&copy; 2026 Cap Mission</footer>
+  </div>
+</div>
+
+<script>
+  // ── Config — change SERVER_URL when deploying ──────────────
+  const SERVER_URL   = 'https://rzumg-102-100-188-76.a.free.pinggy.link';
+  const MAX_DURATION = 5 * 60;        // 5 minutes
+  const MAX_SIZE_MB  = 50;
+  const MAX_SIZE_B   = MAX_SIZE_MB * 1024 * 1024;
+
+  // ── DOM ────────────────────────────────────────────────────
+  const preview        = document.getElementById('preview');
+  const btnRecord      = document.getElementById('btnRecord');
+  const btnStop        = document.getElementById('btnStop');
+  const btnReset       = document.getElementById('btnReset');
+  const btnSubmit      = document.getElementById('btnSubmit');
+  const timerOverlay   = document.getElementById('timerOverlay');
+  const timerText      = document.getElementById('timerText');
+  const statusMsg      = document.getElementById('statusMsg');
+  const sizeBarWrap    = document.getElementById('sizeBarWrap');
+  const sizeBarFill    = document.getElementById('sizeBarFill');
+  const sizeLabel      = document.getElementById('sizeLabel');
+  const uploadProgress = document.getElementById('uploadProgress');
+  const uploadBarFill  = document.getElementById('uploadBarFill');
+  const uploadLabel    = document.getElementById('uploadLabel');
+  const emailInput     = document.getElementById('email');
+  const mainForm       = document.getElementById('main-form');
+  const successScreen  = document.getElementById('successScreen');
+
+  // ── State ──────────────────────────────────────────────────
+  let mediaRecorder = null;
+  let stream        = null;
+  let chunks        = [];
+  let recordedBlob  = null;
+  let timerInterval = null;
+  let seconds       = 0;
+
+  // ── Helpers ────────────────────────────────────────────────
+  const showStatus = (msg, type = 'info') => {
+    statusMsg.textContent = msg;
+    statusMsg.className = `status show ${type}`;
+  };
+  const hideStatus = () => { statusMsg.className = 'status'; };
+  const formatTime = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+
+  function updateSizeBar(bytes) {
+    const mb  = bytes / (1024 * 1024);
+    const pct = Math.min((mb / MAX_SIZE_MB) * 100, 100);
+    sizeBarFill.style.width = pct + '%';
+    sizeBarFill.classList.toggle('danger', mb >= MAX_SIZE_MB * 0.9);
+    sizeLabel.textContent = `${mb.toFixed(1)} Mo / ${MAX_SIZE_MB} Mo`;
+  }
+
+  // ── Stop helper ────────────────────────────────────────────
+  function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    clearInterval(timerInterval);
+    timerOverlay.classList.remove('active');
+    btnRecord.disabled = true;
+    btnStop.disabled   = true;
+    btnReset.disabled  = false;
+  }
+
+  // ── Start recording ────────────────────────────────────────
+  btnRecord.addEventListener('click', async () => {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      preview.srcObject = stream;
+      preview.muted     = true;
+      preview.controls  = false;
+
+      chunks = []; recordedBlob = null; seconds = 0;
+
+      const mimeType = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4']
+        .find(t => MediaRecorder.isTypeSupported(t)) || '';
+
+      mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+
+      mediaRecorder.ondataavailable = e => {
+        if (e.data?.size > 0) chunks.push(e.data);
+        const totalSize = chunks.reduce((a, c) => a + c.size, 0);
+        updateSizeBar(totalSize);
+        sizeBarWrap.classList.add('visible');
+        if (totalSize >= MAX_SIZE_B) {
+          showStatus(`⚠️ Limite de ${MAX_SIZE_MB} Mo atteinte. Enregistrement arrêté.`, 'warn');
+          stopRecording();
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const totalSize = chunks.reduce((a, c) => a + c.size, 0);
+        recordedBlob = new Blob(chunks, { type: mimeType || 'video/webm' });
+        preview.srcObject = null;
+        preview.src       = URL.createObjectURL(recordedBlob);
+        preview.muted     = false;
+        preview.controls  = true;
+        preview.play();
+        updateSizeBar(totalSize);
+
+        if (totalSize > MAX_SIZE_B) {
+          showStatus(`❌ Vidéo trop lourde (${(totalSize/1024/1024).toFixed(1)} Mo). Max : ${MAX_SIZE_MB} Mo.`, 'error');
+          btnSubmit.disabled = true;
+        } else {
+          showStatus(`✅ Vidéo prête — ${(totalSize/1024/1024).toFixed(1)} Mo · ${formatTime(seconds)}`, 'success');
+          btnSubmit.disabled = false;
+        }
+      };
+
+      mediaRecorder.start(1000); // collect data every second
+
+      btnRecord.disabled = true;
+      btnStop.disabled   = false;
+      btnReset.disabled  = false;
+      btnSubmit.disabled = true;
+      timerOverlay.classList.add('active');
+      hideStatus();
+
+      timerInterval = setInterval(() => {
+        seconds++;
+        timerText.textContent = formatTime(seconds);
+        if (seconds >= MAX_DURATION) {
+          showStatus('⏱ Durée maximale de 5 minutes atteinte.', 'warn');
+          stopRecording();
+        }
+      }, 1000);
+
+    } catch (err) {
+      showStatus("❌ Impossible d'accéder à la caméra. Vérifiez les permissions.", 'error');
+    }
+  });
+
+  btnStop.addEventListener('click', stopRecording);
+
+  // ── Reset ──────────────────────────────────────────────────
+  btnReset.addEventListener('click', () => {
+    stopRecording();
+    chunks = []; recordedBlob = null; seconds = 0;
+    preview.src = ''; preview.controls = false; preview.muted = true;
+    sizeBarWrap.classList.remove('visible');
+    sizeBarFill.style.width = '0%';
+    timerText.textContent   = '00:00';
+    btnRecord.disabled = false;
+    btnStop.disabled   = true;
+    btnReset.disabled  = true;
+    btnSubmit.disabled = true;
+    hideStatus();
+  });
+
+  // ── Submit — browser uploads directly to Cloudinary ───────
+  btnSubmit.addEventListener('click', async () => {
+    const email = emailInput.value.trim();
+    if (!email)        return showStatus('❌ Veuillez saisir votre adresse e-mail.', 'error');
+    if (!recordedBlob) return showStatus('❌ Veuillez enregistrer une vidéo.', 'error');
+
+    btnSubmit.disabled = true;
+    uploadProgress.classList.add('show');
+    uploadBarFill.style.width = '5%';
+    uploadLabel.textContent   = 'Préparation…';
+
+    try {
+      // 1. Get signed credentials from server
+      uploadLabel.textContent   = 'Connexion au serveur…';
+      uploadBarFill.style.width = '10%';
+      const signRes = await fetch(`${SERVER_URL}/sign-upload`);
+      const { timestamp, signature, api_key, cloud_name } = await signRes.json();
+
+      // 2. Upload directly browser → Cloudinary with progress bar
+      uploadLabel.textContent   = 'Envoi de la vidéo…';
+      uploadBarFill.style.width = '15%';
+
+      const fd = new FormData();
+      fd.append('file', recordedBlob, 'candidature.webm');
+      fd.append('api_key', api_key);
+      fd.append('timestamp', timestamp);
+      fd.append('signature', signature);
+      fd.append('folder', 'candidats_cap_mission');
+      fd.append('resource_type', 'video');
+
+      const videoUrl = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloud_name}/video/upload`);
+        xhr.upload.onprogress = e => {
+          if (e.lengthComputable) {
+            const pct = Math.round((e.loaded / e.total) * 72) + 15;
+            uploadBarFill.style.width = pct + '%';
+            uploadLabel.textContent   = `Envoi… ${Math.round(e.loaded / e.total * 100)}%`;
+          }
         };
+        xhr.onload  = () => xhr.status === 200
+          ? resolve(JSON.parse(xhr.responseText).secure_url)
+          : reject(new Error('Échec Cloudinary : ' + xhr.responseText));
+        xhr.onerror = () => reject(new Error('Erreur réseau'));
+        xhr.send(fd);
+      });
 
-        document.getElementById('uploadForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const file = input.files[0];
-            if (!file) { alert("Veuillez sélectionner une vidéo !"); return; }
+      // 3. Save email + URL to Google Sheets (tiny request)
+      uploadBarFill.style.width = '92%';
+      uploadLabel.textContent   = 'Enregistrement de votre candidature…';
 
-            btn.style.display = 'none';
-            loader.style.display = 'block';
-            loader.innerHTML = "Envoi en cours... 🚀<br><small>Merci de ne pas fermer cette page</small>";
+      await fetch(`${SERVER_URL}/save-candidature`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, videoUrl }),
+      });
 
-            const SERVER_URL = "https://ywkbb-102-100-188-76.a.free.pinggy.link/upload";
+      uploadBarFill.style.width = '100%';
+      uploadLabel.textContent   = 'Envoyé avec succès !';
 
-            try {
-                const formData = new FormData(e.target);
-                await new Promise((resolve, reject) => {
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('POST', SERVER_URL);
+      setTimeout(() => {
+        mainForm.style.display = 'none';
+        successScreen.classList.add('show');
+      }, 800);
 
-                    xhr.upload.onprogress = (event) => {
-                        if (event.lengthComputable) {
-                            const percent = Math.round((event.loaded / event.total) * 100);
-                            loader.innerHTML = `Envoi en cours... 🚀 ${percent}%<br><small>Merci de ne pas fermer cette page</small>`;
-                        }
-                    };
+    } catch (err) {
+      console.error(err);
+      uploadProgress.classList.remove('show');
+      btnSubmit.disabled = false;
+      showStatus("❌ Erreur lors de l'envoi : " + err.message, 'error');
+    }
+  });
 
-                    xhr.onload = () => {
-                        if (xhr.status >= 200 && xhr.status < 300) {
-                            try {
-                                const result = JSON.parse(xhr.responseText);
-                                if (result.success) resolve(result);
-                                else reject(new Error(result.error || "Erreur serveur"));
-                            } catch { reject(new Error("Réponse serveur invalide")); }
-                        } else { reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`)); }
-                    };
-
-                    xhr.onerror = () => reject(new Error("Erreur réseau ou CORS"));
-                    xhr.send(formData);
-                });
-
-                document.querySelector('.card').innerHTML = `
-                    <h1 style="font-size: 50px;">🎉</h1>
-                    <h2 style="color: #f26522;">Merci !</h2>
-                    <p>Votre candidature a été transmise avec succès.</p>
-                `;
-
-            } catch (err) {
-                console.error("Upload error:", err);
-                alert("Erreur lors de l'envoi : " + err.message);
-                btn.style.display = 'block';
-                loader.style.display = 'none';
-            }
-        };
-    </script>
+  // ── Pre-fill email from URL ?email=xxx ─────────────────────
+  const urlEmail = new URLSearchParams(window.location.search).get('email');
+  if (urlEmail) emailInput.value = decodeURIComponent(urlEmail);
+</script>
 </body>
 </html>
