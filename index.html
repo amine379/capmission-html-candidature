@@ -349,13 +349,11 @@
 <div class="card">
   <div class="card-header">
     <img src="https://sb.capmission.ma/files/site/images/logo.png" alt="Cap Mission">
-    <h1>Finalisez votre candidature ww1</h1>
+    <h1>Finalisez votre candidature w2</h1>
     <p>Enregistrez une courte vidéo de présentation</p>
   </div>
 
   <div class="card-body" id="main-form">
-
-    <!-- Email hidden — comes from URL ?email=xxx, never shown to user -->
     <input type="hidden" id="email">
 
     <span class="recorder-label">Votre vidéo <span style="color:var(--muted);font-weight:400">(max 5 min · 50 Mo)</span></span>
@@ -408,18 +406,17 @@
 
 <script>
   // ══════════════════════════════════════════════════════════
-  //  ⚙️  CONFIG — mettez vos vraies valeurs ici
+  //  ⚙️  CONFIG — 3 valeurs à remplir
   // ══════════════════════════════════════════════════════════
-  const SERVER_URL        = 'https://rzumg-102-100-188-76.a.free.pinggy.link'; // votre serveur
-  const CLOUDINARY_CLOUD  = 'dgxlxwlxw';    // ex: 'dxyz123abc'
-  const CLOUDINARY_PRESET = 'capmission_unsigned'; // preset non-signé dans Cloudinary
+  const CLOUDINARY_CLOUD  = 'dgxlxwlxw';
+  const CLOUDINARY_PRESET = 'capmission_unsigned'; // unsigned preset Cloudinary
+  const GOOGLE_SHEET_URL  = 'https://script.google.com/macros/s/AKfycbxXVGvuv41jnqAFdJEZtbJWFtf5gXMHcDm5hY_oUN3yF_J6mkfMjMDrKBkM26gMzRU/exec'; // ← collez ici process.env.GOOGLE_SHEET_URL
   // ══════════════════════════════════════════════════════════
 
   const MAX_DURATION = 5 * 60;
   const MAX_SIZE_MB  = 50;
   const MAX_SIZE_B   = MAX_SIZE_MB * 1024 * 1024;
 
-  // DOM
   const preview        = document.getElementById('preview');
   const btnRecord      = document.getElementById('btnRecord');
   const btnStop        = document.getElementById('btnStop');
@@ -438,7 +435,6 @@
   const mainForm       = document.getElementById('main-form');
   const successScreen  = document.getElementById('successScreen');
 
-  // State
   let mediaRecorder = null;
   let stream        = null;
   let chunks        = [];
@@ -446,7 +442,6 @@
   let timerInterval = null;
   let seconds       = 0;
 
-  // Helpers
   const showStatus = (msg, type = 'info') => {
     statusMsg.textContent = msg;
     statusMsg.className = `status show ${type}`;
@@ -463,11 +458,10 @@
     sizeLabel.textContent = `${mb.toFixed(1)} Mo / ${MAX_SIZE_MB} Mo`;
   }
 
-  // Pre-fill email from URL — invisible to user
+  // Email from URL param — invisible to user
   const urlEmail = new URLSearchParams(window.location.search).get('email');
   if (urlEmail) emailInput.value = decodeURIComponent(urlEmail);
 
-  // Stop recording
   function stopRecording() {
     if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
     if (stream) stream.getTracks().forEach(t => t.stop());
@@ -478,14 +472,12 @@
     btnReset.disabled  = false;
   }
 
-  // Start recording
   btnRecord.addEventListener('click', async () => {
     try {
       stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       preview.srcObject = stream;
       preview.muted     = true;
       preview.controls  = false;
-
       chunks = []; recordedBlob = null; seconds = 0;
 
       const mimeType = [
@@ -517,7 +509,6 @@
         preview.controls  = true;
         preview.play();
         updateSizeBar(totalSize);
-
         if (totalSize > MAX_SIZE_B) {
           showStatus(`❌ Vidéo trop lourde (${(totalSize/1024/1024).toFixed(1)} Mo). Max : ${MAX_SIZE_MB} Mo.`, 'error');
           btnSubmit.disabled = true;
@@ -551,7 +542,6 @@
 
   btnStop.addEventListener('click', stopRecording);
 
-  // Reset
   btnReset.addEventListener('click', () => {
     stopRecording();
     chunks = []; recordedBlob = null; seconds = 0;
@@ -567,20 +557,14 @@
   });
 
   // ══════════════════════════════════════════════════════════
-  //  SUBMIT
-  //  Step 1: HTML → Cloudinary directly (unsigned preset)
-  //  Step 2: HTML → your server /save-candidature (just URL+email)
-  //  Your server never touches the video file
+  //  SUBMIT — zéro passage par le serveur Node.js
+  //  Étape 1 : vidéo → Cloudinary directement (unsigned)
+  //  Étape 2 : email + URL → Google Sheets directement
   // ══════════════════════════════════════════════════════════
   btnSubmit.addEventListener('click', async () => {
-    // Email comes silently from URL param
     const email = emailInput.value.trim();
-    if (!email) {
-      return showStatus('❌ Email manquant dans le lien. Contactez Cap Mission.', 'error');
-    }
-    if (!recordedBlob) {
-      return showStatus('❌ Veuillez enregistrer une vidéo.', 'error');
-    }
+    if (!email)        return showStatus('❌ Email manquant dans le lien.', 'error');
+    if (!recordedBlob) return showStatus('❌ Veuillez enregistrer une vidéo.', 'error');
 
     btnSubmit.disabled = true;
     uploadProgress.classList.add('show');
@@ -588,54 +572,47 @@
     uploadLabel.textContent = 'Préparation…';
 
     try {
-      // ── STEP 1: Upload directly browser → Cloudinary ──────
-      // No server involved, no CORS issue, always works
+      // ── Étape 1 : upload direct navigateur → Cloudinary ───
       uploadLabel.textContent   = 'Envoi de la vidéo…';
       uploadBarFill.style.width = '10%';
 
       const fd = new FormData();
       fd.append('file', recordedBlob, 'candidature.webm');
-      fd.append('upload_preset', CLOUDINARY_PRESET); // unsigned preset
+      fd.append('upload_preset', CLOUDINARY_PRESET);
       fd.append('folder', 'candidats_cap_mission');
 
       const videoUrl = await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/video/upload`);
-
         xhr.upload.onprogress = e => {
           if (e.lengthComputable) {
-            const pct = Math.round((e.loaded / e.total) * 80) + 10; // 10% → 90%
+            const pct = Math.round((e.loaded / e.total) * 78) + 10;
             uploadBarFill.style.width = pct + '%';
             uploadLabel.textContent   = `Envoi… ${Math.round(e.loaded / e.total * 100)}%`;
           }
         };
-
         xhr.onload = () => {
           if (xhr.status === 200) {
             resolve(JSON.parse(xhr.responseText).secure_url);
           } else {
-            reject(new Error('Cloudinary: ' + xhr.responseText));
+            reject(new Error('Cloudinary erreur: ' + xhr.status + ' ' + xhr.responseText));
           }
         };
         xhr.onerror = () => reject(new Error('Erreur réseau Cloudinary'));
         xhr.send(fd);
       });
 
-      // ── STEP 2: Save email + videoUrl to Google Sheets ────
-      // Only tiny JSON sent to your server — no video, no timeout
+      // ── Étape 2 : enregistrement direct → Google Sheets ───
+      // Google Apps Script accepte les requêtes cross-origin
       uploadBarFill.style.width = '92%';
       uploadLabel.textContent   = 'Enregistrement…';
 
-      const saveRes = await fetch(`${SERVER_URL}/save-candidature`, {
+      await fetch(GOOGLE_SHEET_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'bypass-tunnel-reminder': 'true',
-        },
+        mode: 'no-cors', // Google Sheets webhook ne renvoie pas de CORS headers
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, videoUrl }),
       });
-
-      if (!saveRes.ok) throw new Error('Erreur serveur: ' + saveRes.status);
 
       uploadBarFill.style.width = '100%';
       uploadLabel.textContent   = 'Envoyé !';
