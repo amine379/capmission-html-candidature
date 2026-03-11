@@ -117,7 +117,6 @@
     </script>
 </body>
 </html> -->
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -387,8 +386,8 @@
 
   <div class="card-body" id="main-form">
 
-    <div class="field" style="display: none;" >
-      <label for="email">Votre adresse e-mail</label>
+    <div class="field">
+      <label for="email">Votre adresse e-mailwww</label>
       <input type="email" id="email" placeholder="exemple@email.com" required>
     </div>
 
@@ -442,7 +441,7 @@
 
 <script>
   // ── Config — change SERVER_URL when deploying ──────────────
-  const SERVER_URL   = 'https://rzumg-102-100-188-76.a.free.pinggy.link';
+  const SERVER_URL   = 'https://rzumg-102-100-188-76.a.free.pinggy.link ';
   const MAX_DURATION = 5 * 60;        // 5 minutes
   const MAX_SIZE_MB  = 50;
   const MAX_SIZE_B   = MAX_SIZE_MB * 1024 * 1024;
@@ -588,8 +587,9 @@
 
   // ── Submit — browser uploads directly to Cloudinary ───────
   btnSubmit.addEventListener('click', async () => {
-    const email = emailInput.value.trim();
-    if (!email)        return showStatus('❌ Veuillez saisir votre adresse e-mail.', 'error');
+    // Email can come from URL param (?email=) or from the visible input field
+    const email = emailInput.value.trim() || new URLSearchParams(window.location.search).get('email') || '';
+    if (!email)        return showStatus('❌ Email introuvable. Vérifiez le lien reçu.', 'error');
     if (!recordedBlob) return showStatus('❌ Veuillez enregistrer une vidéo.', 'error');
 
     btnSubmit.disabled = true;
@@ -601,7 +601,9 @@
       // 1. Get signed credentials from server
       uploadLabel.textContent   = 'Connexion au serveur…';
       uploadBarFill.style.width = '10%';
-      const signRes = await fetch(`${SERVER_URL}/sign-upload`);
+      const signRes = await fetch(`${SERVER_URL}/sign-upload`, {
+        headers: { 'bypass-tunnel-reminder': 'true' }
+      });
       const { timestamp, signature, api_key, cloud_name } = await signRes.json();
 
       // 2. Upload directly browser → Cloudinary with progress bar
@@ -639,7 +641,10 @@
 
       await fetch(`${SERVER_URL}/save-candidature`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'bypass-tunnel-reminder': 'true'
+        },
         body: JSON.stringify({ email, videoUrl }),
       });
 
