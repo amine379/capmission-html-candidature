@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -116,4 +116,92 @@
         };
     </script>
 </body>
-</html>
+</html> -->
+
+
+
+
+<!-- Replace your <script> block with this -->
+<script>
+const urlParams = new URLSearchParams(window.location.search);
+const emailCandidat = urlParams.get('email');
+if (emailCandidat) document.getElementById('hiddenEmail').value = emailCandidat;
+
+const input = document.getElementById('video-input');
+const btn = document.getElementById('submitBtn');
+const fileName = document.getElementById('file-name');
+const loader = document.getElementById('loader');
+
+input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 80 * 1024 * 1024) {
+        alert("Vidéo trop lourde (max 80MB)");
+        input.value = "";
+        return;
+    }
+
+    fileName.style.display = 'block';
+    btn.style.display = 'block';
+    btn.scrollIntoView({ behavior: 'smooth' });
+};
+
+document.getElementById('uploadForm').onsubmit = async (e) => {
+    e.preventDefault();
+
+    const file = input.files[0];
+    if (!file) { alert("Veuillez sélectionner une vidéo !"); return; }
+
+    btn.style.display = 'none';
+    loader.style.display = 'block';
+    loader.innerHTML = "Envoi en cours... 🚀<br><small>Merci de ne pas fermer cette page</small>";
+
+    const SERVER_URL = "https://ywkbb-102-100-188-76.a.free.pinggy.link/upload";
+
+    try {
+        const formData = new FormData(e.target);
+
+        await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', SERVER_URL);
+
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable) {
+                    const percent = Math.round((event.loaded / event.total) * 100);
+                    loader.innerHTML = `Envoi en cours... 🚀 ${percent}%<br><small>Merci de ne pas fermer cette page</small>`;
+                }
+            };
+
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const result = JSON.parse(xhr.responseText);
+                        if (result.success) resolve(result);
+                        else reject(new Error(result.error || "Erreur serveur"));
+                    } catch {
+                        reject(new Error("Réponse serveur invalide"));
+                    }
+                } else {
+                    reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
+                }
+            };
+
+            xhr.onerror = () => reject(new Error("Erreur réseau ou CORS"));
+            xhr.send(formData);
+        });
+
+        document.querySelector('.card').innerHTML = `
+            <h1 style="font-size: 50px;">🎉</h1>
+            <h2 style="color: #f26522;">Merci !</h2>
+            <p>Votre candidature a été transmise avec succès.</p>
+        `;
+
+    } catch (err) {
+        console.error("Upload error:", err);
+        alert("Erreur lors de l'envoi : " + err.message);
+        btn.style.display = 'block';
+        loader.style.display = 'none';
+    }
+};
+</script>
