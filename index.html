@@ -186,29 +186,6 @@
       margin-top: 4px;
     }
     .card-body { padding: 28px 32px 32px; }
-
-    .field { margin-bottom: 20px; }
-    .field label {
-      display: block;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--blue);
-      margin-bottom: 7px;
-      letter-spacing: 0.3px;
-    }
-    .field input {
-      width: 100%;
-      padding: 12px 16px;
-      border: 2px solid #e2e4f0;
-      border-radius: 12px;
-      font-family: inherit;
-      font-size: 15px;
-      color: var(--text);
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .field input:focus { border-color: var(--orange); }
-
     .recorder-label {
       font-size: 13px;
       font-weight: 600;
@@ -216,7 +193,6 @@
       margin-bottom: 10px;
       display: block;
     }
-
     .video-wrapper {
       position: relative;
       width: 100%;
@@ -254,7 +230,6 @@
       animation: blink 1s infinite;
     }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-
     .size-bar-wrap { margin-bottom: 14px; display: none; }
     .size-bar-wrap.visible { display: block; }
     .size-bar-top {
@@ -278,7 +253,6 @@
       width: 0%;
     }
     .size-bar-fill.danger { background: var(--danger); }
-
     .controls { display: flex; gap: 10px; margin-bottom: 20px; }
     .btn {
       flex: 1;
@@ -302,7 +276,6 @@
     .btn-stop:hover:not(:disabled) { background: #c53030; transform: translateY(-1px); }
     .btn-reset { background: var(--gray); color: var(--blue); flex: 0 0 auto; padding: 13px 16px; }
     .btn-reset:hover:not(:disabled) { background: #e2e4f0; }
-
     .status {
       text-align: center;
       font-size: 13px;
@@ -316,7 +289,6 @@
     .status.warn    { background: #fff3cd; color: #856404; }
     .status.error   { background: #fff0f0; color: var(--danger); }
     .status.success { background: #f0fff4; color: var(--success); }
-
     .btn-submit {
       width: 100%;
       padding: 16px;
@@ -333,7 +305,6 @@
     }
     .btn-submit:hover:not(:disabled) { background: var(--blue-dark); transform: translateY(-1px); }
     .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
-
     .upload-progress { margin-top: 14px; display: none; }
     .upload-progress.show { display: block; }
     .upload-bar-track {
@@ -351,9 +322,7 @@
       transition: width 0.3s;
     }
     .upload-bar-label { text-align: center; font-size: 13px; color: var(--muted); }
-
     footer { text-align: center; font-size: 11px; color: var(--muted); margin-top: 20px; }
-
     .success-screen { display: none; text-align: center; padding: 40px 32px; }
     .success-screen.show { display: block; }
     .success-icon {
@@ -386,10 +355,8 @@
 
   <div class="card-body" id="main-form">
 
-    <div class="field">
-      <label for="email">Votre adresse e-mailwww</label>
-      <input type="email" id="email" placeholder="exemple@email.com" required>
-    </div>
+    <!-- Email hidden — comes from URL ?email=xxx, never shown to user -->
+    <input type="hidden" id="email">
 
     <span class="recorder-label">Votre vidéo <span style="color:var(--muted);font-weight:400">(max 5 min · 50 Mo)</span></span>
 
@@ -440,13 +407,19 @@
 </div>
 
 <script>
-  // ── Config — change SERVER_URL when deploying ──────────────
-  const SERVER_URL   = 'https://rzumg-102-100-188-76.a.free.pinggy.link ';
-  const MAX_DURATION = 5 * 60;        // 5 minutes
+  // ══════════════════════════════════════════════════════════
+  //  ⚙️  CONFIG — mettez vos vraies valeurs ici
+  // ══════════════════════════════════════════════════════════
+  const SERVER_URL        = 'https://rzumg-102-100-188-76.a.free.pinggy.link'; // votre serveur
+  const CLOUDINARY_CLOUD  = 'VOTRE_CLOUD_NAME';    // ex: 'dxyz123abc'
+  const CLOUDINARY_PRESET = 'VOTRE_UPLOAD_PRESET'; // preset non-signé dans Cloudinary
+  // ══════════════════════════════════════════════════════════
+
+  const MAX_DURATION = 5 * 60;
   const MAX_SIZE_MB  = 50;
   const MAX_SIZE_B   = MAX_SIZE_MB * 1024 * 1024;
 
-  // ── DOM ────────────────────────────────────────────────────
+  // DOM
   const preview        = document.getElementById('preview');
   const btnRecord      = document.getElementById('btnRecord');
   const btnStop        = document.getElementById('btnStop');
@@ -465,7 +438,7 @@
   const mainForm       = document.getElementById('main-form');
   const successScreen  = document.getElementById('successScreen');
 
-  // ── State ──────────────────────────────────────────────────
+  // State
   let mediaRecorder = null;
   let stream        = null;
   let chunks        = [];
@@ -473,13 +446,14 @@
   let timerInterval = null;
   let seconds       = 0;
 
-  // ── Helpers ────────────────────────────────────────────────
+  // Helpers
   const showStatus = (msg, type = 'info') => {
     statusMsg.textContent = msg;
     statusMsg.className = `status show ${type}`;
   };
   const hideStatus = () => { statusMsg.className = 'status'; };
-  const formatTime = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  const formatTime = s =>
+    `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
 
   function updateSizeBar(bytes) {
     const mb  = bytes / (1024 * 1024);
@@ -489,7 +463,11 @@
     sizeLabel.textContent = `${mb.toFixed(1)} Mo / ${MAX_SIZE_MB} Mo`;
   }
 
-  // ── Stop helper ────────────────────────────────────────────
+  // Pre-fill email from URL — invisible to user
+  const urlEmail = new URLSearchParams(window.location.search).get('email');
+  if (urlEmail) emailInput.value = decodeURIComponent(urlEmail);
+
+  // Stop recording
   function stopRecording() {
     if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
     if (stream) stream.getTracks().forEach(t => t.stop());
@@ -500,7 +478,7 @@
     btnReset.disabled  = false;
   }
 
-  // ── Start recording ────────────────────────────────────────
+  // Start recording
   btnRecord.addEventListener('click', async () => {
     try {
       stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -510,8 +488,12 @@
 
       chunks = []; recordedBlob = null; seconds = 0;
 
-      const mimeType = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4']
-        .find(t => MediaRecorder.isTypeSupported(t)) || '';
+      const mimeType = [
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm',
+        'video/mp4'
+      ].find(t => MediaRecorder.isTypeSupported(t)) || '';
 
       mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
 
@@ -545,8 +527,7 @@
         }
       };
 
-      mediaRecorder.start(1000); // collect data every second
-
+      mediaRecorder.start(1000);
       btnRecord.disabled = true;
       btnStop.disabled   = false;
       btnReset.disabled  = false;
@@ -570,7 +551,7 @@
 
   btnStop.addEventListener('click', stopRecording);
 
-  // ── Reset ──────────────────────────────────────────────────
+  // Reset
   btnReset.addEventListener('click', () => {
     stopRecording();
     chunks = []; recordedBlob = null; seconds = 0;
@@ -585,88 +566,92 @@
     hideStatus();
   });
 
-  // ── Submit — browser uploads directly to Cloudinary ───────
+  // ══════════════════════════════════════════════════════════
+  //  SUBMIT
+  //  Step 1: HTML → Cloudinary directly (unsigned preset)
+  //  Step 2: HTML → your server /save-candidature (just URL+email)
+  //  Your server never touches the video file
+  // ══════════════════════════════════════════════════════════
   btnSubmit.addEventListener('click', async () => {
-    // Email can come from URL param (?email=) or from the visible input field
-    const email = emailInput.value.trim() || new URLSearchParams(window.location.search).get('email') || '';
-    if (!email)        return showStatus('❌ Email introuvable. Vérifiez le lien reçu.', 'error');
-    if (!recordedBlob) return showStatus('❌ Veuillez enregistrer une vidéo.', 'error');
+    // Email comes silently from URL param
+    const email = emailInput.value.trim();
+    if (!email) {
+      return showStatus('❌ Email manquant dans le lien. Contactez Cap Mission.', 'error');
+    }
+    if (!recordedBlob) {
+      return showStatus('❌ Veuillez enregistrer une vidéo.', 'error');
+    }
 
     btnSubmit.disabled = true;
     uploadProgress.classList.add('show');
     uploadBarFill.style.width = '5%';
-    uploadLabel.textContent   = 'Préparation…';
+    uploadLabel.textContent = 'Préparation…';
 
     try {
-      // 1. Get signed credentials from server
-      uploadLabel.textContent   = 'Connexion au serveur…';
-      uploadBarFill.style.width = '10%';
-      const signRes = await fetch(`${SERVER_URL}/sign-upload`, {
-        headers: { 'bypass-tunnel-reminder': 'true' }
-      });
-      const { timestamp, signature, api_key, cloud_name } = await signRes.json();
-
-      // 2. Upload directly browser → Cloudinary with progress bar
+      // ── STEP 1: Upload directly browser → Cloudinary ──────
+      // No server involved, no CORS issue, always works
       uploadLabel.textContent   = 'Envoi de la vidéo…';
-      uploadBarFill.style.width = '15%';
+      uploadBarFill.style.width = '10%';
 
       const fd = new FormData();
       fd.append('file', recordedBlob, 'candidature.webm');
-      fd.append('api_key', api_key);
-      fd.append('timestamp', timestamp);
-      fd.append('signature', signature);
+      fd.append('upload_preset', CLOUDINARY_PRESET); // unsigned preset
       fd.append('folder', 'candidats_cap_mission');
-      fd.append('resource_type', 'video');
 
       const videoUrl = await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloud_name}/video/upload`);
+        xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/video/upload`);
+
         xhr.upload.onprogress = e => {
           if (e.lengthComputable) {
-            const pct = Math.round((e.loaded / e.total) * 72) + 15;
+            const pct = Math.round((e.loaded / e.total) * 80) + 10; // 10% → 90%
             uploadBarFill.style.width = pct + '%';
             uploadLabel.textContent   = `Envoi… ${Math.round(e.loaded / e.total * 100)}%`;
           }
         };
-        xhr.onload  = () => xhr.status === 200
-          ? resolve(JSON.parse(xhr.responseText).secure_url)
-          : reject(new Error('Échec Cloudinary : ' + xhr.responseText));
-        xhr.onerror = () => reject(new Error('Erreur réseau'));
+
+        xhr.onload = () => {
+          if (xhr.status === 200) {
+            resolve(JSON.parse(xhr.responseText).secure_url);
+          } else {
+            reject(new Error('Cloudinary: ' + xhr.responseText));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Erreur réseau Cloudinary'));
         xhr.send(fd);
       });
 
-      // 3. Save email + URL to Google Sheets (tiny request)
+      // ── STEP 2: Save email + videoUrl to Google Sheets ────
+      // Only tiny JSON sent to your server — no video, no timeout
       uploadBarFill.style.width = '92%';
-      uploadLabel.textContent   = 'Enregistrement de votre candidature…';
+      uploadLabel.textContent   = 'Enregistrement…';
 
-      await fetch(`${SERVER_URL}/save-candidature`, {
+      const saveRes = await fetch(`${SERVER_URL}/save-candidature`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'bypass-tunnel-reminder': 'true'
+          'bypass-tunnel-reminder': 'true',
         },
         body: JSON.stringify({ email, videoUrl }),
       });
 
+      if (!saveRes.ok) throw new Error('Erreur serveur: ' + saveRes.status);
+
       uploadBarFill.style.width = '100%';
-      uploadLabel.textContent   = 'Envoyé avec succès !';
+      uploadLabel.textContent   = 'Envoyé !';
 
       setTimeout(() => {
         mainForm.style.display = 'none';
         successScreen.classList.add('show');
-      }, 800);
+      }, 700);
 
     } catch (err) {
       console.error(err);
       uploadProgress.classList.remove('show');
       btnSubmit.disabled = false;
-      showStatus("❌ Erreur lors de l'envoi : " + err.message, 'error');
+      showStatus('❌ ' + err.message, 'error');
     }
   });
-
-  // ── Pre-fill email from URL ?email=xxx ─────────────────────
-  const urlEmail = new URLSearchParams(window.location.search).get('email');
-  if (urlEmail) emailInput.value = decodeURIComponent(urlEmail);
 </script>
 </body>
 </html>
